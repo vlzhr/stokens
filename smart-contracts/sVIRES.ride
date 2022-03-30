@@ -1,0 +1,29 @@
+{-# STDLIB_VERSION 5 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
+let sviresId = base58'2vUUWkRYyWxD6hXAbgeoFHR1e2HBfqfJdHpdmXJkN88Y'
+let isStopped = false
+
+@Callable(i)
+func stakeVIRES() = {
+  let pmt = i.payments[0].value()
+  let amount = pmt.amount
+  if (pmt.assetId != viresId) then {
+    throw("attach VIRES token only")
+  } else if (isStopped) then { 
+    throw("smart contract is on lock")
+  } else {
+    strict lockInv = invoke(Address(base58'3PAZv9tgK1PX7dKR7b4kchq5qdpUS3G5sYT'), "lockVires", [1, true], [pmt])
+    let sviresIssue = Reissue(sviresId, amount, true)
+    [
+      sviresIssue,
+      ScriptTransfer(i.caller, amount, sviresId)
+    ]
+  }
+}
+
+@Verifier(tx)
+func verify() = sigVerify(tx.bodyBytes, tx.proofs[0], tx.senderPublicKey)
+        
