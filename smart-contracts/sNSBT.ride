@@ -36,16 +36,20 @@ func swapUsdnWavesOnNeutrino() = {
     # start swap
     strict swapInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapNeutrinoToWaves", [], [AttachedPayment(usdnId, amount)])
     [
-      IntegerEntry("swap_started", height)
+      IntegerEntry("swap_started", height),
+      StringEntry("swap_txId", i.transactionId.toBase58String()),
+      IntegerEntry("swap_index", height+2001668)
     ]
   }
 }
 
 @Callable(i)
-func swapWavesUsdnOnDex() = {
+func finishSwapAndExchangeWavesUsdnOnDex() = {
   if (isStopped) then { 
     throw("smart contract is on lock")
   } else {
+    strict swapFinishInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "withdraw", [this.toString(), getIntegerValue(this, "swap_index"), getStringValue(this, "swap_txId")], [])
+
     let amount = wavesBalance(this).available - 200000000
 
     if (amount <= 0) then {throw("nothing to swap")} else {
