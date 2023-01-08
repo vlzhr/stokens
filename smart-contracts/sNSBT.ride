@@ -4,6 +4,7 @@
 
 let nsbtId = base58'6nSpVyNH7yM69eg446wrQR94ipbbcmZMU1ENPwanC97g'
 let snsbtId = base58'8wUmN9Y15f3JR4KZfE81XLXpkdgwnqoBNG6NmocZpKQx'
+let usdnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
 let isStopped = false
 
 @Callable(i)
@@ -24,6 +25,35 @@ func stakeNSBT() = {
   }
 }
 
+@Callable(i)
+func swapUsdnWavesOnNeutrino() = {
+  if (isStopped) then { 
+    throw("smart contract is on lock")
+  } else {
+    # calculate available limit
+    strict amount = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapParamsByUserSYSREADONLY", [this.toString(), 0], []).exactAs[(Int, Int, Int, Int, Int, Int, Int)]._7
+
+    # start swap
+    strict swapInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapNeutrinoToWaves", [], [AttachedPayment(usdnId, amount)])
+    [
+      IntegerEntry("swap_started", height)
+    ]
+  }
+}
+
+@Callable(i)
+func swapWavesUsdnOnDex() = {
+  if (isStopped) then { 
+    throw("smart contract is on lock")
+  } else {
+    let amount = wavesBalance(this).available - 200000000
+
+    if (amount <= 0) then {throw("nothing to swap")} else {
+      strict swapInv = invoke(Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG'), "exchange", [1], [AttachedPayment(unit, amount)])
+      []
+    }
+  }
+}
+
 @Verifier(tx)
 func verify() = sigVerify(tx.bodyBytes, tx.proofs[0], tx.senderPublicKey)
-        
