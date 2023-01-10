@@ -38,7 +38,7 @@ func swapUsdnWavesOnNeutrino() = {
     [
       IntegerEntry("swap_started", height),
       StringEntry("swap_txId", i.transactionId.toBase58String()),
-      IntegerEntry("swap_index", height-2001681)
+      IntegerEntry("swap_index", getIntegerValue(Address(base58'3P5Bfd58PPfNvBM2Hy8QfbcDqMeNtzg7KfP'), "price_index") + 1) # height-2001682)
     ]
   }
 }
