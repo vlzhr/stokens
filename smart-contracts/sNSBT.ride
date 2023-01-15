@@ -53,7 +53,7 @@ func finishSwapAndExchangeWavesUsdnOnDex() = {
     let amount = wavesBalance(this).available - 200000000
 
     if (amount <= 0) then {throw("nothing to swap")} else {
-      strict swapInv = invoke(Address(base58'3PHaNgomBkrvEL2QnuJarQVJa71wjw9qiqG'), "exchange", [1], [AttachedPayment(unit, amount)])
+      strict swapInv = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeAndSendTo", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString()], [AttachedPayment(unit, amount)])
       []
     }
   }
