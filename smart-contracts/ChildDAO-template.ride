@@ -3,12 +3,12 @@
 {-# SCRIPT_TYPE ACCOUNT #-}
 
 let configAddressStore = "config"
-let configAddress = this.getString(configAddressStore).valueOrErrorMessage("child: config address not found").addressFromString().valueOrErrorMessage("invalid config address")
-let HEIGHT = height
+let configAddress = this.getString(configAddressStore).valueOrElse("3PMcMiMEs6w56NRGacksXtFG5zS7doE9fpL").addressFromString().valueOrElse(Address(base58'3PMcMiMEs6w56NRGacksXtFG5zS7doE9fpL'))
 func writeConstString(key: String, value: String) = if !isDefined(getString(this, key)) then StringEntry(key, value) else throw("already initialized: " + key)
+
 func opAllowedStore(op: String) = "op_" + op + "_allowed"
 let votingResults = configAddress.getString("contract_voting_result").valueOrErrorMessage("no contract_voting_result").addressFromString().valueOrErrorMessage("invalid contract_voting_result")
-
+let HEIGHT = height
 
 @Verifier(tx)
 func verify() = {
