@@ -19,4 +19,4 @@ func verify() = {
 }
 
 @Callable(i)
-func init(conf: String) = [ writeConstString(configAddressStore, conf) ]
+func init(conf: String) = if (i.caller == Address(base58'3PMcMiMEs6w56NRGacksXtFG5zS7doE9fpL')) then [ writeConstString(configAddressStore, conf) ] else []
