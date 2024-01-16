@@ -1,0 +1,22 @@
+{-# STDLIB_VERSION 6 #-}
+{-# CONTENT_TYPE DAPP #-}
+{-# SCRIPT_TYPE ACCOUNT #-}
+
+let configAddressStore = "config"
+let configAddress = this.getString(configAddressStore).valueOrErrorMessage("child: config address not found").addressFromString().valueOrErrorMessage("invalid config address")
+let HEIGHT = height
+func writeConstString(key: String, value: String) = if !isDefined(getString(this, key)) then StringEntry(key, value) else throw("already initialized: " + key)
+func opAllowedStore(op: String) = "op_" + op + "_allowed"
+let votingResults = configAddress.getString("contract_voting_result").valueOrErrorMessage("no contract_voting_result").addressFromString().valueOrErrorMessage("invalid contract_voting_result")
+
+
+@Verifier(tx)
+func verify() = {
+    let enabled = configAddress.getBoolean(opAllowedStore("child_governance_apply_tx")).valueOrElse(true) # inverted values
+    if(!enabled) then throw("tx application throw governance not enabled") else
+    let id = tx.id.toBase58String()
+    HEIGHT >= votingResults.getIntegerValue("proposal_allow_broadcast_" + this.toString() + "_" + id)
+}
+
+@Callable(i)
+func init(conf: String) = [ writeConstString(configAddressStore, conf) ]
