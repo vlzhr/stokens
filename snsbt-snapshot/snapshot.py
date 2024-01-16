@@ -3,7 +3,11 @@ from json import loads, dumps
 
 pools = loads(get("https://puzzle-js-back.herokuapp.com/api/v1/pools").text)
 result = {"assets": {}, "pools": {}}
-tokens = {"sNSBT": "8wUmN9Y15f3JR4KZfE81XLXpkdgwnqoBNG6NmocZpKQx"} # {"PEPE-NW": "DnsgQ23DYGgRDxUwjmZY4sEZ4QaRtUdLVuzDPBdWJo7G", "WAVES": "WAVES", "sWAVES": "YiNbofFzC17jEHHCMwrRcpy9MrrjabMMLZxg8g5xmf7"} #, "XTN": "DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p" #,}
+tokens = {"sNSBT": "8wUmN9Y15f3JR4KZfE81XLXpkdgwnqoBNG6NmocZpKQx"}
+
+exceptions = {
+    "3P5XtYc2UNoJPzffK5Ex1UdmqMCYuFqziAa": "3PAac3dNbhhX9qo4oxCxo4GY8SXYUHADVa9"
+}
 
 for token in tokens:
     decimals = 1e8 if token != "sNSBT" else 1e6
@@ -32,9 +36,9 @@ for token in tokens:
 
         result["pools"][address] = "PuzzleSwap"
 
-    users = {n: users[n] / decimals for n in users if not users[n] < decimals and not n in result["pools"]}
+    users = {exceptions.get(n, n): users[n] / decimals for n in users if not users[n] < decimals and not n in result["pools"]}
     result["assets"][token] = users
 
-with open("pswap-snsbt-users.json", "w") as f:
+with open("result-160124.json", "w") as f:
     f.write(dumps(result, sort_keys=True, indent='\t', separators=(',', ': ')))
 
