@@ -5,6 +5,8 @@
 let nsbtId = base58'6nSpVyNH7yM69eg446wrQR94ipbbcmZMU1ENPwanC97g'
 let snsbtId = base58'8wUmN9Y15f3JR4KZfE81XLXpkdgwnqoBNG6NmocZpKQx'
 let usdnId = base58'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p'
+let wxId = base58'Atqv59EYzjFGuitKVnMRk6H8FukjoV3ktPorbEys25on'
+let viresId = base58'DSbbhLsSTeDg5Lsiufk2Aneh3DjVqJuPr2M9uU1gwy5p'
 let isStopped = false
 
 @Callable(i)
@@ -13,7 +15,7 @@ func stakeNSBT() = {
   let amount = pmt.amount
   if (pmt.assetId != nsbtId) then {
     throw("attach NSBT token only")
-  } else if (isStopped) then { 
+  } else if (isStopped) then {
     throw("smart contract is on lock")
   } else {
     strict lockInv = invoke(Address(base58'3P8w8NXZUtYdCA13tHbDY5sW4mC27ZFJgG3'), "stake", [], [pmt])
@@ -26,15 +28,15 @@ func stakeNSBT() = {
 }
 
 @Callable(i)
-func swapUsdnWavesOnNeutrino() = {
-  if (isStopped) then { 
+func swapUsdnToBasketOnNeutrino() = {
+  if (isStopped) then {
     throw("smart contract is on lock")
   } else {
     # calculate available limit
     strict amount = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapParamsByUserSYSREADONLY", [this.toString(), 0], []).exactAs[(Int, Int, Int, Int, Int, Int, Int)]._7
 
     # start swap
-    strict swapInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapNeutrinoToWaves", [], [AttachedPayment(usdnId, amount)])
+    strict swapInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "swapNeutrinoToBasket", [], [AttachedPayment(usdnId, amount)])
     [
       IntegerEntry("swap_started", height),
       StringEntry("swap_txId", i.transactionId.toBase58String()),
@@ -45,15 +47,39 @@ func swapUsdnWavesOnNeutrino() = {
 
 @Callable(i)
 func finishSwapAndExchangeWavesUsdnOnDex() = {
-  if (isStopped) then { 
+  if (isStopped) then {
     throw("smart contract is on lock")
   } else {
-    strict swapFinishInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "withdraw", [this.toString(), getIntegerValue(this, "swap_index"), getStringValue(this, "swap_txId")], [])
+    # let priceIndex = getIntegerValue(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "balance_unlock_block_"+this.toString())
+    strict swapFinishInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "withdraw",
+                                  [this.toString(), getIntegerValue(this, "swap_index"), getStringValue(this, "swap_txId")], [])
 
     let amount = wavesBalance(this).available - 200000000
 
     if (amount <= 0) then {throw("nothing to swap")} else {
-      strict swapInv = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeAndSendTo", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString()], [AttachedPayment(unit, amount)])
+      strict swapInv = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 0], [AttachedPayment(unit, amount)])
+      strict swapInv2 = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 1], [AttachedPayment(wxId, assetBalance(this, wxId))])
+      strict swapInv3 = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 2], [AttachedPayment(viresId, assetBalance(this, wxId))])
+      []
+    }
+  }
+}
+
+@Callable(i)
+func finishSwapAndExchangeToUsdnOnDex2() = {
+  if (isStopped) then {
+    throw("smart contract is on lock")
+  } else {
+    # let priceIndex = getIntegerValue(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "balance_unlock_block_"+this.toString())
+    strict swapFinishInv = invoke(Address(base58'3PC9BfRwJWWiw9AREE2B3eWzCks3CYtg4yo'), "withdraw",
+                                  [this.toString(), getIntegerValue(this, "swap_index")+1, getStringValue(this, "swap_txId")], [])
+
+    let amount = wavesBalance(this).available - 200000000
+
+    if (amount <= 0) then {throw("nothing to swap")} else {
+      strict swapInv = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 0], [AttachedPayment(unit, amount)])
+      strict swapInv2 = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 1], [AttachedPayment(wxId, assetBalance(this, wxId))])
+      strict swapInv3 = invoke(Address(base58'3PLPCb3wF2H2gtzohoAjeWcGaMKEiJvtE5X'), "exchangeThenTransfer", ["DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p", this.toString(), 2], [AttachedPayment(viresId, assetBalance(this, wxId))])
       []
     }
   }
